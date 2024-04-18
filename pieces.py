@@ -10,8 +10,10 @@ class BoardManager:
         self.board = Board(_screen)
         self.pieces = defaultdict(lambda: Piece())
 
+        self.player_turn = Piece.WHITE
+
         self.selected_square = None
-        self.move_squares = None
+        self.move_squares = []
 
     def setup(self):
         p = {"pawn": Pawn, "knight": Knight, "bishop": Bishop, "rook": Rook, "queen": Queen, "king": King}
@@ -20,7 +22,12 @@ class BoardManager:
         for square, piece in START_POS.items():
             self.pieces[square] = p[piece[:-2]](s[piece[-1]])
 
-        self.selected_square = "a1"
+    def test_setup(self):
+        self.pieces['e5'] = Knight(Piece.BLACK)
+        self.pieces['g6'] = Pawn(Piece.WHITE)
+        self.pieces['d5'] = King(Piece.BLACK)
+        self.pieces['d4'] = Queen(Piece.BLACK)
+        self.pieces['f7'] = Bishop(Piece.BLACK)
 
     def piece_surface(self, piece):
         square_to_draw = pygame.Surface(self.board.square_rect.size, pygame.SRCALPHA)
@@ -39,7 +46,7 @@ class BoardManager:
 
         board_txt.blit(resources["board_texture"], (0, 0), self.board.board_rect)
 
-        if self.selected_square:
+        if self.selected_square is not None:
             board_surf.fill((200, 0, 0, 100),
                             self.board.get_square(self.selected_square),
                             special_flags=pygame.BLEND_RGBA_MAX)
@@ -57,18 +64,18 @@ class BoardManager:
 
             board_surf.blit(piece_surf, self.board.get_square(square).topleft)
 
-        if self.move_squares is not None:
-            for move_square in self.move_squares:
-                if Square(move_square).is_black():
-                    board_surf.blit(resize(resources['pieces']['move_out'],
-                                           self.board.square_rect.size),
-                                    self.board.get_square(move_square).topleft,
-                                    special_flags=pygame.BLEND_RGBA_SUB)
-                piece_surf = resources['pieces']['move']
-
-                board_surf.blit(resize(piece_surf,
+        for move_square in self.move_squares:
+            notation = str(move_square)
+            if Square(notation).is_black():
+                board_surf.blit(resize(resources['pieces']['move_out'],
                                        self.board.square_rect.size),
-                                self.board.get_square(move_square).topleft)
+                                self.board.get_square(notation).topleft,
+                                special_flags=pygame.BLEND_RGBA_SUB)
+            piece_surf = resources['pieces']['move']
+
+            board_surf.blit(resize(piece_surf,
+                                   self.board.square_rect.size),
+                            self.board.get_square(notation).topleft)
 
         board_txt.blit(board_surf, (0, 0))
 
@@ -77,27 +84,86 @@ class BoardManager:
     def handle_mouse_click(self, pos):
         if self.board.is_pos_on_board(pos):
             self.selected_square = self.board.get_square_from_pos(pos)
-            self.move_squares = self.possible_piece_moves(self.selected_square)
+            self.move_squares = self.piece_moves(self.selected_square)
+            print(self.move_squares)
             return True
+        else:
+            self.selected_square = None
+            self.move_squares = []
         return False
 
-    def possible_piece_moves(self, notation):
+    def piece_moves(self, notation):
         if notation not in self.pieces:
-            return None
+            return []
 
         piece = self.pieces[notation]
-        position = self.board.get_square(notation)
+
+        def moves_from_directions(directions):
+            _moves = []
+
+            for direction in directions:
+                loc = Square(notation).add(*direction)
+
+                while loc is not None and str(loc) not in self.pieces:
+                    _moves.append(loc)
+                    loc = loc.add(*direction)
+
+            return _moves
 
         match piece:
             case Pawn():
-                forward_move = str(Square(notation).add(0, 1 if piece.is_white() else -1))
+                forward_move = Square(notation).add(0, 1 if piece.is_white() else -1)
+
+                if forward_move is None or str(forward_move) in self.pieces:
+                    return []
 
                 if piece.moves == 0:
-                    return [forward_move, str(Square(notation).add(0, 2 if piece.is_white() else -2))]
+                    double_move = Square(notation).add(0, 2 if piece.is_white() else -2)
+                    if double_move is None or str(double_move) in self.pieces:
+                        return [forward_move]
+                    return [forward_move, double_move]
 
                 return [forward_move]
 
-        return None
+            case Knight():
+                moves = [(1, 2), (-1, 2), (1, -2), (-1, -2),
+                         (2, 1), (2, -1), (-2, 1), (-2, -1)]
+                _squares = [Square(notation).add(*move) for move in moves]
+                return [square for square in _squares
+                        if square is not None and str(square) not in self.pieces]
+
+            case Bishop():
+                directions = [(1, 1), (-1, 1), (1, -1), (-1, -1)]
+
+                return moves_from_directions(directions)
+
+            case Rook():
+                directions = [(1, 0), (-1, 0), (0, -1), (0, 1)]
+
+                return moves_from_directions(directions)
+
+            case Queen():
+                directions = [(1, 0), (-1, 0), (0, -1), (0, 1),
+                              (1, 1), (-1, 1), (1, -1), (-1, -1)]
+
+                return moves_from_directions(directions)
+
+            case King():
+                moves = []
+                loc = Square(notation)
+
+                for x in [-1, 0, 1]:
+                    for y in [-1, 0, 1]:
+                        if x == y == 0:
+                            continue
+                        pos_move = loc.add(x, y)
+                        if pos_move is None or str(pos_move) in self.pieces:
+                            continue
+                        moves.append(pos_move)
+
+                return moves
+
+        return []
 
 
 class Piece:

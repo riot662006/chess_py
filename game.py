@@ -13,7 +13,7 @@ class Game:
         load_resources()
 
         self.board_man = BoardManager(self.screen)
-        self.board_man.setup()
+        self.board_man.test_setup()
 
         self.clock = pygame.time.Clock()
         self.fps = 50

@@ -21,8 +21,14 @@ class Square:
     def __str__(self):
         return "abcdefgh"[self.file - 1] + str(self.rank)
 
+    def __repr__(self):
+        return f"Square <{str(self)}>"
+
     def add(self, f, r):
-        return Square((self.file + f, self.rank + r))
+        try:
+            return Square((self.file + f, self.rank + r))
+        except AttributeError:
+            return None
 
     def is_black(self):
         return (self.file + self.rank) % 2 == 0
