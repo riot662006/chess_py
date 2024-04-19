@@ -16,7 +16,7 @@ class Game:
         self.board_man.test_setup()
 
         self.clock = pygame.time.Clock()
-        self.fps = 50
+        self.fps = 30
 
     def next_frame(self):
         w, h = self.screen.get_size()

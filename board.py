@@ -40,7 +40,7 @@ class Board:
         self.length = 400
         self.margin = 10
 
-        self.side = 1
+        self.side = 0
 
     @property
     def square_length(self):

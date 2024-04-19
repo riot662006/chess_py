@@ -13,6 +13,7 @@ class BoardManager:
         self.player_turn = Piece.WHITE
 
         self.selected_square = None
+        self.capture_squares = []
         self.move_squares = []
 
     def setup(self):
@@ -23,11 +24,12 @@ class BoardManager:
             self.pieces[square] = p[piece[:-2]](s[piece[-1]])
 
     def test_setup(self):
-        self.pieces['e5'] = Knight(Piece.BLACK)
+        self.pieces['e5'] = Knight(Piece.WHITE)
         self.pieces['g6'] = Pawn(Piece.WHITE)
         self.pieces['d5'] = King(Piece.BLACK)
         self.pieces['d4'] = Queen(Piece.BLACK)
         self.pieces['f7'] = Bishop(Piece.BLACK)
+        self.pieces['g1'] = Bishop(Piece.WHITE)
 
     def piece_surface(self, piece):
         square_to_draw = pygame.Surface(self.board.square_rect.size, pygame.SRCALPHA)
@@ -49,6 +51,11 @@ class BoardManager:
         if self.selected_square is not None:
             board_surf.fill((200, 0, 0, 100),
                             self.board.get_square(self.selected_square),
+                            special_flags=pygame.BLEND_RGBA_MAX)
+
+        for square in self.capture_squares:
+            board_surf.fill((0, 200, 0, 100),
+                            self.board.get_square(str(square)),
                             special_flags=pygame.BLEND_RGBA_MAX)
 
         board_surf.blit(resize(resources["board_outline"], self.board.board_rect.size), (0, 0))
@@ -85,11 +92,12 @@ class BoardManager:
         if self.board.is_pos_on_board(pos):
             self.selected_square = self.board.get_square_from_pos(pos)
             self.move_squares = self.piece_moves(self.selected_square)
-            print(self.move_squares)
+            self.capture_squares = self.piece_captures(self.selected_square)
             return True
         else:
             self.selected_square = None
             self.move_squares = []
+            self.capture_squares = []
         return False
 
     def piece_moves(self, notation):
@@ -98,15 +106,15 @@ class BoardManager:
 
         piece = self.pieces[notation]
 
-        def moves_from_directions(directions):
+        def moves_from_directions(dirs):
             _moves = []
 
-            for direction in directions:
-                loc = Square(notation).add(*direction)
+            for direction in dirs:
+                _loc = Square(notation).add(*direction)
 
-                while loc is not None and str(loc) not in self.pieces:
-                    _moves.append(loc)
-                    loc = loc.add(*direction)
+                while _loc is not None and str(_loc) not in self.pieces:
+                    _moves.append(_loc)
+                    _loc = _loc.add(*direction)
 
             return _moves
 
@@ -164,6 +172,100 @@ class BoardManager:
                 return moves
 
         return []
+
+    def piece_captures(self, notation):
+        if notation not in self.pieces:
+            return []
+
+        piece = self.pieces[notation]
+
+        def captures_from_directions(dirs):
+            _captures = []
+
+            for direction in dirs:
+                _loc = Square(notation).add(*direction)
+
+                while _loc is not None and str(_loc) not in self.pieces:
+                    _loc = _loc.add(*direction)
+
+                if _loc is not None and self.pieces[str(_loc)].is_white() != piece.is_white():
+                    _captures.append(_loc)
+
+            return _captures
+
+        match piece:
+            case Pawn():
+                basic_captures = [
+                    Square(notation).add(-1, 1 if piece.is_white() else -1),
+                    Square(notation).add(1, 1 if piece.is_white() else -1)
+                ]
+
+                # will add en-passant later
+
+                return [cap for cap in basic_captures
+                            if cap is not None
+                        and str(cap) in self.pieces
+                        and self.pieces[str(cap)].is_white() != piece.is_white()]
+
+            case Knight():
+                moves = [(1, 2), (-1, 2), (1, -2), (-1, -2),
+                         (2, 1), (2, -1), (-2, 1), (-2, -1)]
+                captures = [Square(notation).add(*move) for move in moves]
+                return [cap for cap in captures
+                        if cap is not None
+                        and str(cap) in self.pieces
+                        and self.pieces[str(cap)].is_white() != piece.is_white()]
+
+            case Bishop():
+                directions = [(1, 1), (-1, 1), (1, -1), (-1, -1)]
+
+                return captures_from_directions(directions)
+
+            case Rook():
+                directions = [(1, 0), (-1, 0), (0, -1), (0, 1)]
+
+                return captures_from_directions(directions)
+
+            case Queen():
+                directions = [(1, 0), (-1, 0), (0, -1), (0, 1),
+                              (1, 1), (-1, 1), (1, -1), (-1, -1)]
+
+                return captures_from_directions(directions)
+
+            case King():
+                captures = []
+                loc = Square(notation)
+
+                for x in [-1, 0, 1]:
+                    for y in [-1, 0, 1]:
+                        if x == y == 0:
+                            continue
+                        pos_move = loc.add(x, y)
+                        if pos_move is None:
+                            continue
+                        if str(pos_move) in self.pieces and self.pieces[str(pos_move)].is_white() != piece.is_white():
+                            captures.append(pos_move)
+
+                return captures
+
+        return []
+
+
+    def is_pinned(self, notation):
+        # not complete
+        if notation not in self.pieces:
+            return False
+
+        if isinstance(notation, King):
+            return False
+
+        my_piece = self.pieces[notation]
+        del self.pieces[notation]
+
+        for other_notation, other_piece in self.pieces.items():
+            if not isinstance(other_piece, (Rook, Queen, Bishop)):
+                pass
+
 
 
 class Piece:
