@@ -24,6 +24,11 @@ class Square:
     def __repr__(self):
         return f"Square <{str(self)}>"
 
+    def __eq__(self, other):
+        if isinstance(other, str):
+            other = Square(other)
+        return self.file == other.file and self.rank == other.rank
+
     def add(self, f, r):
         try:
             return Square((self.file + f, self.rank + r))
@@ -37,8 +42,8 @@ class Square:
 class Board:
     def __init__(self, _screen: pygame.Surface | pygame.SurfaceType):
         self.screen = _screen
-        self.length = 400
-        self.margin = 10
+        self.length = 600
+        self.margin = 40
 
         self.side = 0
 

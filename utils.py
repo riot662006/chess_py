@@ -51,7 +51,7 @@ def load_resources():
         "board_outline": pygame.image.load("images/board.png").convert_alpha(),
     }
 
-    all_piece_img = pygame.transform.smoothscale(pygame.image.load("images/piecesClean.png").convert_alpha(), (1800, 600))
+    all_piece_img = pygame.transform.smoothscale(pygame.image.load("images/pieces.png").convert_alpha(), (1800, 600))
     piece_names = ["king", "queen", "bishop", "knight", "rook", "pawn"]
     sides = ["w", "b"]
 

@@ -13,7 +13,7 @@ class Game:
         load_resources()
 
         self.board_man = BoardManager(self.screen)
-        self.board_man.test_setup()
+        self.board_man.setup()
 
         self.clock = pygame.time.Clock()
         self.fps = 30
@@ -35,6 +35,8 @@ class Game:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:
                         self.board_man.handle_mouse_click(event.pos)
+                elif event.type == pygame.KEYDOWN:
+                    self.board_man.handle_key_press(event)
 
             self.next_frame()
             self.clock.tick(self.fps)

@@ -16,6 +16,8 @@ class BoardManager:
         self.capture_squares = []
         self.move_squares = []
 
+        self.move_history = []
+
     def setup(self):
         p = {"pawn": Pawn, "knight": Knight, "bishop": Bishop, "rook": Rook, "queen": Queen, "king": King}
         s = {"w": Piece.WHITE, "b": Piece.BLACK}
@@ -40,6 +42,21 @@ class BoardManager:
 
         return square_to_draw
 
+    def undo(self):
+        if len(self.move_history) > 0:
+            from_notation, piece_from, to_notation, piece_to = self.move_history.pop()
+
+            del self.pieces[to_notation]
+
+            if piece_to is not None:
+                self.pieces[to_notation] = piece_to
+
+            self.pieces[from_notation] = piece_from
+            piece_from.moves -= 1
+
+            return True
+        return False
+
     def draw(self):
         resources = load_resources()
 
@@ -61,7 +78,7 @@ class BoardManager:
         board_surf.blit(resize(resources["board_outline"], self.board.board_rect.size), (0, 0))
 
         for square, piece in self.pieces.items():
-            if square == self.selected_square or Square(square).is_black():
+            if square == self.selected_square or Square(square).is_black() or square in self.capture_squares:
                 board_surf.blit(resize(piece.outline_sprite,
                                        self.board.square_rect.size),
                                 self.board.get_square(square).topleft,
@@ -90,15 +107,53 @@ class BoardManager:
 
     def handle_mouse_click(self, pos):
         if self.board.is_pos_on_board(pos):
-            self.selected_square = self.board.get_square_from_pos(pos)
-            self.move_squares = self.piece_moves(self.selected_square)
-            self.capture_squares = self.piece_captures(self.selected_square)
+            cur_square = self.board.get_square_from_pos(pos)
+            cur_move_square = self.piece_moves(cur_square)
+            cur_capture_square = self.piece_captures(cur_square)
+
+            if self.selected_square is not None and cur_square in [*self.move_squares, *self.capture_squares]:
+                self.move_piece(self.selected_square, str(cur_square))
+
+                self.selected_square = None
+                self.move_squares = []
+                self.capture_squares = []
+
+                return False
+
+            self.selected_square = cur_square
+            self.move_squares = cur_move_square
+            self.capture_squares = cur_capture_square
             return True
-        else:
-            self.selected_square = None
-            self.move_squares = []
-            self.capture_squares = []
+
+        self.selected_square = None
+        self.move_squares = []
+        self.capture_squares = []
         return False
+
+    def handle_key_press(self, event):
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_LCTRL:
+                self.undo()
+
+    def move_piece(self, from_notation, to_notation):
+        if from_notation not in self.pieces:
+            raise AttributeError("This square is empty. No piece to move")
+
+        return_val = None
+
+        print(str(self.pieces[from_notation]), "to", to_notation)
+
+        if to_notation in self.pieces:
+            return_val = self.pieces[to_notation]
+            print(str(self.pieces[from_notation]), "eats", str(return_val))
+
+        self.pieces[to_notation] = self.pieces[from_notation]
+        del self.pieces[from_notation]
+
+        self.pieces[to_notation].moves += 1
+        self.move_history.append((from_notation, self.pieces[to_notation], to_notation, return_val))
+
+        return return_val
 
     def piece_moves(self, notation):
         if notation not in self.pieces:
@@ -273,7 +328,8 @@ class Piece:
     BLACK = True
 
     def __init__(self, side: bool | None = None):
-        self.resources = [None, None, None, None]
+        self.resources: list[pygame.Surface | pygame.SurfaceType | None] = [None, None, None, None]
+
         self.side = side  # false - white; true - black
         self.moves = 0
 
