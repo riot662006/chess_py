@@ -10,12 +10,12 @@ class Square:
 
         if isinstance(notation, str):
             if len(notation) != 2 or notation[0] not in "abcdefgh" or notation[1] not in "12345678":
-                raise AttributeError("Invalid square")
+                raise AttributeError(f"Invalid square - {notation}")
             self.file = "abcdefgh".index(notation[0]) + 1
             self.rank = int(notation[1])
         elif isinstance(notation, (tuple, list)):
             if len(notation) != 2 or not(1 <= notation[0] <= 8 and 1 <= notation[1] <= 8):
-                raise AttributeError("Invalid square")
+                raise AttributeError(f"Invalid square - {notation}")
             self.file, self.rank = notation
 
     def __str__(self):
@@ -77,7 +77,7 @@ class Board:
 
             return self.square_rect.move((x * self.square_length, y * self.square_length))
 
-        raise AttributeError("Invalid square")
+        raise AttributeError("Invalid square ")
 
     def is_pos_on_board(self, pos):
         return self.board_rect.move(self.margin, self.margin).collidepoint(pos)

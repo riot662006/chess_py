@@ -47,11 +47,11 @@ def load_resources():
     if game_resources is not None:
         return game_resources
     resources = {
-        "board_texture": pygame.transform.scale2x(pygame.image.load("images/texture.jpg").convert_alpha()),
-        "board_outline": pygame.image.load("images/board.png").convert_alpha(),
+        "board_texture": pygame.transform.scale2x(pygame.image.load("../assets/images/background.jpg").convert_alpha()),
+        "board_outline": pygame.image.load("../assets/images/board.png").convert_alpha(),
     }
 
-    all_piece_img = pygame.transform.smoothscale(pygame.image.load("images/pieces.png").convert_alpha(), (1800, 600))
+    all_piece_img = pygame.transform.smoothscale(pygame.image.load("../assets/images/pieces.png").convert_alpha(), (1800, 600))
     piece_names = ["king", "queen", "bishop", "knight", "rook", "pawn"]
     sides = ["w", "b"]
 

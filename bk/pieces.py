@@ -18,6 +18,14 @@ class BoardManager:
 
         self.move_history = []
 
+    @property
+    def white_pieces(self):
+        return {square: piece for square, piece in self.pieces.items() if piece.is_white()}
+
+    @property
+    def black_pieces(self):
+        return {square: piece for square, piece in self.pieces.items() if not piece.is_white()}
+
     def setup(self):
         p = {"pawn": Pawn, "knight": Knight, "bishop": Bishop, "rook": Rook, "queen": Queen, "king": King}
         s = {"w": Piece.WHITE, "b": Piece.BLACK}
@@ -71,7 +79,7 @@ class BoardManager:
                             special_flags=pygame.BLEND_RGBA_MAX)
 
         for square in self.capture_squares:
-            board_surf.fill((0, 200, 0, 100),
+            board_surf.fill((255, 0, 0, 100),
                             self.board.get_square(str(square)),
                             special_flags=pygame.BLEND_RGBA_MAX)
 
@@ -79,10 +87,16 @@ class BoardManager:
 
         for square, piece in self.pieces.items():
             if square == self.selected_square or Square(square).is_black() or square in self.capture_squares:
-                board_surf.blit(resize(piece.outline_sprite,
-                                       self.board.square_rect.size),
-                                self.board.get_square(square).topleft,
-                                special_flags=pygame.BLEND_RGBA_SUB)
+                outline_sprite = resize(piece.outline_sprite,
+                                        self.board.square_rect.size)
+
+                if square in self.capture_squares:
+                    outline_sprite.fill((255, 0, 0), special_flags=pygame.BLEND_RGB_MAX)
+                    board_surf.blit(outline_sprite, self.board.get_square(square).topleft)
+                else:
+                    board_surf.blit(outline_sprite,
+                                    self.board.get_square(square).topleft,
+                                    special_flags=pygame.BLEND_RGBA_SUB)
 
             piece_surf = self.piece_surface(piece)
 
@@ -108,9 +122,6 @@ class BoardManager:
     def handle_mouse_click(self, pos):
         if self.board.is_pos_on_board(pos):
             cur_square = self.board.get_square_from_pos(pos)
-            cur_move_square = self.piece_moves(cur_square)
-            cur_capture_square = self.piece_captures(cur_square)
-
             if self.selected_square is not None and cur_square in [*self.move_squares, *self.capture_squares]:
                 self.move_piece(self.selected_square, str(cur_square))
 
@@ -120,7 +131,15 @@ class BoardManager:
 
                 return False
 
+            cur_move_square, cur_capture_square, pin_squares = self.possible_moves(cur_square)
+            print(cur_move_square, cur_capture_square, pin_squares)
+
             self.selected_square = cur_square
+
+            if self.is_pinned(cur_square):
+                self.move_squares = []
+                self.capture_squares = []
+                return True
             self.move_squares = cur_move_square
             self.capture_squares = cur_capture_square
             return True
@@ -154,6 +173,104 @@ class BoardManager:
         self.move_history.append((from_notation, self.pieces[to_notation], to_notation, return_val))
 
         return return_val
+
+    def possible_moves(self, notation) -> list[list, list, list]:
+        if notation not in self.pieces:
+            return [[], [], []]
+
+        piece = self.pieces[notation]
+
+        bishop_moves = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        rook_moves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
+        match piece:
+            case Pawn():
+                normal_moves = []
+                forward_move = Square(notation).add(0, 1 if piece.is_white() else -1)
+
+                if forward_move is not None and str(forward_move) not in self.pieces:
+                    normal_moves.append(forward_move)
+
+                    if piece.moves == 0:
+                        double_move = Square(notation).add(0, 2 if piece.is_white() else -2)
+                        if double_move is not None and str(double_move) not in self.pieces:
+                            normal_moves.append(double_move)
+
+                capture_moves = [Square(notation).add(move, 1 if piece.is_white() else -1) for move in [-1, 1]]
+                capture_moves = [move for move in capture_moves
+                                 if move is not None and str(move) in self.pieces
+                                 and self.pieces[str(move)].is_white() != piece.is_white()]
+
+                return [normal_moves, capture_moves, [None for _ in capture_moves]]
+
+            case Knight():
+                movements = [(1, 2), (-1, 2), (1, -2), (-1, -2),
+                             (2, 1), (2, -1), (-2, 1), (-2, -1)]
+
+                moves = [[], [], []]
+
+                for move in movements:
+                    square = Square(notation).add(*move)
+
+                    if square is not None:
+                        if str(square) in self.pieces:
+                            if self.pieces[str(square)].is_white() != piece.is_white():
+                                moves[1].append(square)
+                                moves[2].append(None)
+
+                        else:
+                            moves[0].append(square)
+
+                return moves
+
+            case Bishop() | Queen() | Rook():
+                movements = []
+                moves = [[], [], []]
+
+                if isinstance(piece, (Bishop, Queen)):
+                    movements.extend(bishop_moves)
+
+                if isinstance(piece, (Rook, Queen)):
+                    movements.extend(rook_moves)
+
+                for move in movements:
+                    _loc = Square(notation).add(*move)
+
+                    while _loc is not None and str(_loc) not in self.pieces:
+                        moves[0].append(_loc)
+                        _loc = _loc.add(*move)
+
+                    if _loc is not None and self.pieces[str(_loc)].is_white() != piece.is_white():
+                        moves[1].append(_loc)
+
+                        _loc = _loc.add(*move)
+                        while _loc is not None and str(_loc) not in self.pieces:
+                            _loc = _loc.add(*move)
+
+                        if _loc is not None and str(_loc) and self.pieces[str(_loc)].is_white() != piece.is_white():
+                            moves[2].append(_loc)
+                        else:
+                            moves[2].append(None)
+                return moves
+
+            case King():
+                moves = [[], [], []]
+                loc = Square(notation)
+
+                for x in [-1, 0, 1]:
+                    for y in [-1, 0, 1]:
+                        if x == y == 0:
+                            continue
+                        pos_move = loc.add(x, y)
+                        if pos_move is None:
+                            continue
+                        if str(pos_move) not in self.pieces:
+                            moves[0].append(pos_move)
+                        elif self.pieces[str(pos_move)].is_white() != piece.is_white():
+                            moves[1].append(pos_move)
+                            moves[2].append(None)
+
+                return moves
 
     def piece_moves(self, notation):
         if notation not in self.pieces:
@@ -258,7 +375,7 @@ class BoardManager:
                 # will add en-passant later
 
                 return [cap for cap in basic_captures
-                            if cap is not None
+                        if cap is not None
                         and str(cap) in self.pieces
                         and self.pieces[str(cap)].is_white() != piece.is_white()]
 
@@ -305,22 +422,23 @@ class BoardManager:
 
         return []
 
-
     def is_pinned(self, notation):
-        # not complete
         if notation not in self.pieces:
             return False
+        piece_map = self.black_pieces if self.pieces[notation].is_white() else self.white_pieces
 
-        if isinstance(notation, King):
-            return False
+        for square, piece in piece_map.items():
+            if isinstance(piece, (King, Pawn, Knight)):
+                continue
 
-        my_piece = self.pieces[notation]
-        del self.pieces[notation]
+            normal, capture, pinned_to = self.possible_moves(square)
+            for i, capture_square in enumerate(capture):
+                if capture_square == notation:
+                    if isinstance(self.pieces[str(pinned_to[i])], King) \
+                            and self.pieces[str(pinned_to[i])].is_white() == self.pieces[notation].is_white():
+                        return True
 
-        for other_notation, other_piece in self.pieces.items():
-            if not isinstance(other_piece, (Rook, Queen, Bishop)):
-                pass
-
+        return False
 
 
 class Piece:
