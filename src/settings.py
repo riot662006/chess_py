@@ -15,8 +15,6 @@ class BoardSettings:
 
         self.side = "-"
 
-        print(self.piece_sprites)
-
     def get_board_length(self, with_outline=False):
         w, h = self.screen.get_size()
 

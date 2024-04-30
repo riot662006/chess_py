@@ -135,7 +135,6 @@ class Board:
                         pass
 
                 self._squares[i][j] = piece
-        print(self._squares)
 
     def get_clicked_square(self, pos: tuple[int, int]):
         board_rect = self.settings.get_board_rect()

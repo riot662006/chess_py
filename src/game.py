@@ -24,7 +24,6 @@ class Game:
                 return False
 
             elif event.type == pygame.KEYDOWN:
-                print(self.board[6, 4])
                 print(str(self.board))
 
             elif event.type == pygame.MOUSEBUTTONUP:
