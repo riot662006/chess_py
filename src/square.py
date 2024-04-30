@@ -10,6 +10,9 @@ class Square:
         self._x = x
         self._y = y
 
+    def __repr__(self):
+        return f"Square('{str(self)}')"
+
     def __str__(self):
         return "abcdefgh"[self._x] + str(self._y + 1)
 
