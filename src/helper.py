@@ -23,7 +23,7 @@ def load_pieces(filename):
     pieces: dict[str, dict[str, pygame.Surface | pygame.SurfaceType]] = {}
 
     print(all_pieces.get_rect())
-    dimensions = pygame.Rect((0, 0), all_pieces.get_rect().scale_by(1/6, 1/2).size)
+    dimensions = pygame.Rect((0, 0), all_pieces.get_rect().scale_by(1 / 6, 1 / 2).size)
     print(dimensions)
 
     for i, side in enumerate(["white", "black"]):
@@ -34,6 +34,6 @@ def load_pieces(filename):
             pieces[side][piece].blit(all_pieces,
                                      (0, 0),
                                      dimensions.move(j * dimensions.width, i * dimensions.height)
-            )
+                                     )
 
     return pieces

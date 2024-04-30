@@ -15,10 +15,30 @@ class Board:
     def __init__(self, screen: pygame.Surface | pygame.SurfaceType):
         self.screen = screen
 
-        self._squares = [[None for j in range(8)] for i in range(8)]
+        self._squares: list[list[None | Piece]] = [[None for _ in range(8)] for _ in range(8)]
+        self._square_highlight: list[list[None | pygame.Color]] = [[None for _ in range(8)] for _ in
+                                                                   range(8)]
 
         self.settings = BoardSettings(self.screen)
-        self.str_to_pieces(start_config)
+        self.str_to_board(start_config)
+
+    def __str__(self):
+        res = ""
+
+        for y in range(8):
+            for x in range(8):
+                if self._squares[x][y] is not None:
+                    res += self._squares[x][y].short
+                else:
+                    res += "."
+
+        return res
+
+    def __getitem__(self, item: tuple[int, int]) -> None | Piece:
+        if isinstance(item, tuple):
+            return self.at(item)
+
+        raise BoardException("Invalid square position. got", item)
 
     def at(self, pos_or_square: Square | tuple[int, int]):
         if isinstance(pos_or_square, Square):
@@ -30,18 +50,31 @@ class Board:
 
         raise BoardException("Invalid square position. got", pos_or_square)
 
-    def draw(self, side='w'):
+    def grid_to_board_square(self, x, y):
+        if self.settings.side == 'w':  # white player
+            return x, (8 - y - 1)
+        if self.settings.side == 'b':  # black player
+            return (8 - x - 1), y
+        if self.settings.side == '-':  # spectator - TODO: fix later
+            return x, (8 - y - 1)
+
+        raise BoardException("Invalid settings for board side, got " + str(self.settings.side))
+
+    def draw(self):
         pygame.draw.rect(self.screen, "black", self.settings.get_board_rect(True), self.settings.board_outline_width)
         rect = self.settings.get_board_rect()
 
         # board background
         background = load_image("assets/images/board.png").convert_alpha()
         background = pygame.transform.smoothscale(background, rect.size)
-        self._draw_pieces(background, side)
+        self._draw_pieces(background)
 
+        highlight_grid = self._draw_square_highlights()
+
+        self.screen.blit(highlight_grid, rect.topleft)
         self.screen.blit(background, rect.topleft)
 
-    def _draw_pieces(self, surf: pygame.Surface | pygame.SurfaceType, side='w'):
+    def _draw_pieces(self, surf: pygame.Surface | pygame.SurfaceType):
         square_length = self.settings.get_board_square_length()
 
         for y in range(8):
@@ -51,17 +84,31 @@ class Board:
 
                 color, name = self[x, y].color, self[x, y].name
 
-                if side == 'w':
-                    pos_x, pos_y = (8 - x - 1) * square_length, (8 - y - 1) * square_length
-                else:
-                    pos_x, pos_y = x * square_length, y * square_length
+                pos_x, pos_y = [pos * square_length for pos in self.grid_to_board_square(x, y)]
 
                 surf.blit(self.settings.get_piece_outline_sprite(color, name),
                           (pos_x, pos_y), special_flags=pygame.BLEND_RGBA_SUB)
                 surf.blit(self.settings.get_piece_sprite(color, name),
                           (pos_x, pos_y))
 
-    def str_to_pieces(self, brd):
+    def _draw_square_highlights(self):
+        surf = pygame.Surface(self.settings.get_board_rect().size, flags=pygame.SRCALPHA)
+        square_length = self.settings.get_board_square_length()
+
+        for y in range(8):
+            for x in range(8):
+                if self._square_highlight[x][y] is None:
+                    continue
+
+                pos_x, pos_y = [pos * square_length for pos in self.grid_to_board_square(x, y)]
+
+                surf.fill(self._square_highlight[x][y],
+                          (pos_x, pos_y, square_length, square_length),
+                          special_flags=pygame.BLEND_RGBA_ADD)
+
+        return surf
+
+    def str_to_board(self, brd):
         if len(brd) != 64:
             raise BoardException("Invalid string to board conversion, got len = " + str(len(brd)))
 
@@ -90,9 +137,21 @@ class Board:
                 self._squares[i][j] = piece
         print(self._squares)
 
-    def __getitem__(self, item: tuple[int, int]) -> None | Piece:
-        if isinstance(item, tuple):
-            return self.at(item)
+    def get_clicked_square(self, pos: tuple[int, int]):
+        board_rect = self.settings.get_board_rect()
 
-        raise BoardException("Invalid square position. got", item)
+        if board_rect.collidepoint(*pos):
+            rel_pos = pygame.Vector2(pos[0] - board_rect.x, pos[1] - board_rect.y)
+            rel_pos //= self.settings.get_board_square_length()
 
+            pos_x, pos_y = self.grid_to_board_square(int(rel_pos.x), int(rel_pos.y))
+
+            return Square(pos_x, pos_y)
+
+        return None
+
+    def set_highlight_color(self, square: Square, to: str | pygame.Color | None):
+        if isinstance(to, str):
+            to = pygame.Color(to)
+
+        self._square_highlight[square.x][square.y] = to
