@@ -13,8 +13,6 @@ class Game:
         self.board = Board(self.screen)
         self.board.settings.side = "w"
 
-        self.selected_square = None
-
     def update(self):
         needs_render = False
 
@@ -47,13 +45,8 @@ class Game:
         self.board.draw()
 
     def handle_board_clicks(self, pos):
-        if self.selected_square is not None:
-            self.board.set_highlight_color(self.selected_square, None)
-
-        self.selected_square = self.board.get_clicked_square(pos)
-
-        if self.selected_square is not None:
-            self.board.set_highlight_color(self.selected_square, CLR_SELECTED)
+        if self.board.settings.get_board_rect().collidepoint(pos):
+            self.board.handle_click(pos)
 
     def quit(self):
         self.is_running = False

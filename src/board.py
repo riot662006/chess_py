@@ -18,6 +18,7 @@ class Board:
         self._squares: list[list[None | Piece]] = [[None for _ in range(8)] for _ in range(8)]
         self._square_highlight: list[list[None | pygame.Color]] = [[None for _ in range(8)] for _ in
                                                                    range(8)]
+        self.selected_square = None
 
         self.settings = BoardSettings(self.screen)
         self.str_to_board(start_config)
@@ -107,6 +108,15 @@ class Board:
                           special_flags=pygame.BLEND_RGBA_ADD)
 
         return surf
+
+    def handle_click(self, pos: tuple[int, int]):
+        if self.selected_square is not None:
+            self.set_highlight_color(self.selected_square, None)
+
+        self.selected_square = self.get_clicked_square(pos)
+
+        if self.selected_square is not None:
+            self.set_highlight_color(self.selected_square, CLR_SELECTED)
 
     def str_to_board(self, brd):
         if len(brd) != 64:
