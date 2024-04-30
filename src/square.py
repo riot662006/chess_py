@@ -10,13 +10,16 @@ class Square:
         self._x = x
         self._y = y
 
+    def __str__(self):
+        return "abcdefgh"[self._x] + str(self._y + 1)
+
     @property
     def x(self):
-        return self.x
+        return self._x
 
     @property
     def y(self):
-        return self.y
+        return self._y
 
     @staticmethod
     def is_valid(x: int, y: int):
