@@ -8,10 +8,12 @@ class BoardSettings:
     def __init__(self, screen: pygame.Surface | pygame.SurfaceType):
         self.screen = screen
         self.board_padding = 30
-        self.board_outline_width = 5
+        self.board_outline_width = 6
 
         self.piece_sprites = load_pieces("assets/images/pieces.png")
         self.piece_outline_width = 5
+
+        self.side = "-"
 
         print(self.piece_sprites)
 
