@@ -13,7 +13,7 @@ class BoardSettings:
         self.piece_sprites = load_pieces("assets/images/pieces.png")
         self.piece_outline_width = 5
 
-        self.side = "-"
+        self.side = USR_SPECTATOR
 
     def get_board_length(self, with_outline=False):
         w, h = self.screen.get_size()
@@ -44,10 +44,26 @@ class BoardSettings:
         return length
 
     def get_piece_sprite(self, color, piece):
+        if color == USR_WHITE:
+            color = "white"
+        elif color == USR_BLACK:
+            color = "black"
+        else:
+            print("Could not get piece sprite")
+            raise SystemExit()
+
         square_len = self.get_board_square_length()
         return pygame.transform.smoothscale(self.piece_sprites[color][piece], (square_len, square_len))
 
     def get_piece_outline_sprite(self, color, piece):
+        if color == USR_WHITE:
+            color = "white"
+        elif color == USR_BLACK:
+            color = "black"
+        else:
+            print("Could not get piece sprite")
+            raise SystemExit()
+
         square_len = self.get_board_square_length()
         surf = self.piece_sprites[color][piece]
 

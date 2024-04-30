@@ -1,6 +1,8 @@
 import pygame
 import sys
 
+from square import Square
+
 _temp = {}
 
 
@@ -35,3 +37,13 @@ def load_pieces(filename):
                                      )
 
     return pieces
+
+
+def get_moves_in_direction(square: Square, direction: tuple[int, int]):
+    x, y = square.x, square.y
+
+    while Square.is_valid(x + direction[0], y + direction[1]):
+        x += direction[0]
+        y += direction[1]
+
+        yield Square(x, y)

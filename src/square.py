@@ -16,6 +16,12 @@ class Square:
     def __str__(self):
         return "abcdefgh"[self._x] + str(self._y + 1)
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            raise SquareException("Cannot equate type of " + str(self.__class__) + " with " + str(other.__class__))
+
+        return self.x == other.x and self.y == other.y
+
     @property
     def x(self):
         return self._x
@@ -23,6 +29,9 @@ class Square:
     @property
     def y(self):
         return self._y
+
+    def copy(self):
+        return Square(self._x, self._y)
 
     @staticmethod
     def is_valid(x: int, y: int):
@@ -33,3 +42,6 @@ class Square:
             return True
 
         return False
+
+    def to_board_str_index(self):
+        return self.y * 8 + self.x

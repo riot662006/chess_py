@@ -1,6 +1,7 @@
 import pygame
 from helper import load_image
 
+from square import Square
 from board import Board
 from constants import *
 
@@ -11,7 +12,7 @@ class Game:
         self.is_running = True
 
         self.board = Board(self.screen)
-        self.board.settings.side = "w"
+        self.board.settings.side = USR_WHITE
 
     def update(self):
         needs_render = False
@@ -26,7 +27,7 @@ class Game:
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == pygame.BUTTON_LEFT:
-                    self.handle_board_clicks(event.pos)
+                    self.handle_mouse(event.pos)
                     needs_render = True
 
         return needs_render
@@ -44,9 +45,40 @@ class Game:
     def _draw_board(self):
         self.board.draw()
 
-    def handle_board_clicks(self, pos):
+    def handle_mouse(self, pos):
         if self.board.settings.get_board_rect().collidepoint(pos):
-            self.board.handle_click(pos)
+            self.handle_board_click(pos)
+
+    def handle_board_click(self, pos: tuple[int, int]):
+        old_square = self.board.selected_square
+        new_square = self.board.get_clicked_square(pos)
+
+        if old_square is None:
+            old_move_squares = []
+        else:
+            self.board.set_highlight_color(old_square, None)
+            old_move_squares = self.board.get_move_squares(old_square)
+            self.board.selected_square = None
+
+        for square in old_move_squares:
+            self.board.set_highlight_color(square, None)
+
+        if new_square in old_move_squares:
+            self.move_board_piece(old_square, new_square)
+            return
+
+        self.board.selected_square = new_square
+        if self.board.selected_square is not None:
+            self.board.set_highlight_color(self.board.selected_square, CLR_SELECTED)
+
+        # FOR TESTING
+        for square in self.board.get_move_squares(self.board.selected_square):
+            self.board.set_highlight_color(square, CLR_CAPTURABLE)
+
+    def move_board_piece(self, from_square: Square, to_square: Square):
+        self.board.move_piece(from_square, to_square)
+
+        print(self.board.history)
 
     def quit(self):
         self.is_running = False
