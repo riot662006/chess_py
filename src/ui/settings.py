@@ -1,12 +1,18 @@
 import pygame
 
-from helper import load_pieces
-from constants import *
+from ..helper import load_pieces
+from ..constants import *
 
 
-class BoardSettings:
-    def __init__(self, screen: pygame.Surface | pygame.SurfaceType):
-        self.screen = screen
+class SettingsElement:
+    def __init__(self, surface: pygame.Surface | pygame.SurfaceType):
+        self.surface = surface
+
+
+class BoardSettings(SettingsElement):
+    def __init__(self, surface: pygame.Surface | pygame.SurfaceType):
+        super().__init__(surface)
+
         self.board_padding = 30
         self.board_outline_width = 6
 
@@ -16,17 +22,18 @@ class BoardSettings:
         self.side = USR_SPECTATOR
 
     def get_board_length(self, with_outline=False):
-        w, h = self.screen.get_size()
+        w, h = self.surface.get_size()
 
         if with_outline:
             w, h = w - self.board_padding * 2, h - self.board_padding * 2
         else:
-            w, h = w - (self.board_padding + self.board_outline_width) * 2, h - (self.board_padding + self.board_outline_width) * 2
+            w, h = w - (self.board_padding + self.board_outline_width) * 2, h - (
+                        self.board_padding + self.board_outline_width) * 2
 
         return min(w, h)
 
     def get_board_pos(self, with_outline=False):
-        w, h = self.screen.get_size()
+        w, h = self.surface.get_size()
         length = self.get_board_length(with_outline)
 
         x, y = (w - length) // 2, (h - length) // 2

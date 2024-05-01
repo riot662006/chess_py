@@ -2,8 +2,11 @@ import pygame
 from helper import load_image
 
 from square import Square
-from board import Board
+from src.ui.board import Board
 from constants import *
+
+class GameException(Exception):
+    pass
 
 
 class Game:
@@ -11,8 +14,12 @@ class Game:
         self.screen = screen
         self.is_running = True
 
-        self.board = Board(self.screen)
+        self.board_surface = pygame.Surface((600, 600), flags=pygame.SRCALPHA)
+
+        self.board = Board(self.board_surface)
         self.board.settings.side = USR_WHITE
+
+        self.current_turn = USR_WHITE
 
     def update(self):
         needs_render = False
@@ -33,8 +40,12 @@ class Game:
         return needs_render
 
     def render(self):
+        self.board_surface.fill((0, 0, 0, 0))
+
         self._draw_background()
         self._draw_board()
+
+        self.screen.blit(self.board_surface, (0, 0))
 
     def _draw_background(self):
         background = load_image("assets/images/background.jpg")
@@ -76,7 +87,12 @@ class Game:
             self.capture_board_piece(old_square, new_square)
             return
 
+        piece = self.board[new_square]
+        if piece is None or piece.color != self.current_turn:
+            return
+
         self.board.selected_square = new_square
+
         if self.board.selected_square is not None:
             self.board.set_highlight_color(self.board.selected_square, CLR_SELECTED)
 
@@ -88,11 +104,30 @@ class Game:
             self.board.set_highlight_color(square, CLR_CAPTURABLE)
 
     def move_board_piece(self, from_square: Square, to_square: Square):
+        if self.board[from_square] is None:
+            raise GameException("From square can not be empty")
+
+        if self.board[from_square].color != self.current_turn:
+            raise GameException("Wait your turn!")
+
         self.board.move_piece(from_square, to_square)
+
+        if self.current_turn == USR_WHITE:
+            self.current_turn = USR_BLACK
+        elif self.current_turn == USR_BLACK:
+            self.current_turn = USR_WHITE
+        else:
+            raise GameException("Invalid turn")
 
         print(self.board.history)
 
     def capture_board_piece(self, from_square: Square, to_square: Square):
+        if self.board[from_square] is None:
+            raise GameException("From square can not be empty")
+
+        if self.board[from_square].color != self.current_turn:
+            raise GameException("Wait your turn!")
+
         self.board.capture_piece(from_square, to_square)
 
         print(self.board.history)

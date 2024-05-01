@@ -1,26 +1,28 @@
+import sys
 import pygame
 
-from constants import *
-from helper import load_image, get_moves_in_direction
-from settings import BoardSettings
-from square import Square
-from pieces import King, Queen, Knight, Bishop, Rook, Pawn, Piece
+from .ui_element import UIElement
+
+from ..constants import *
+from ..helper import load_image, get_moves_in_direction
+from .settings import BoardSettings
+from ..square import Square
+from ..pieces import King, Queen, Knight, Bishop, Rook, Pawn, Piece
 
 
 class BoardException(Exception):
     pass
 
 
-class Board:
-    def __init__(self, screen: pygame.Surface | pygame.SurfaceType):
-        self.screen = screen
+class Board(UIElement):
+    def __init__(self, surface: pygame.Surface | pygame.SurfaceType):
+        super().__init__(BoardSettings, surface)
 
         self._squares: list[list[None | Piece]] = [[None for _ in range(8)] for _ in range(8)]
         self._square_highlight: list[list[None | pygame.Color]] = [[None for _ in range(8)] for _ in
                                                                    range(8)]
         self.selected_square = None
 
-        self.settings = BoardSettings(self.screen)
         self.str_to_board(START_CONFIG)
 
         # for testing
@@ -67,7 +69,7 @@ class Board:
         raise BoardException("Invalid settings for board side, got " + str(self.settings.side))
 
     def draw(self):
-        pygame.draw.rect(self.screen, "black", self.settings.get_board_rect(True), self.settings.board_outline_width)
+        pygame.draw.rect(self.settings.surface, "black", self.settings.get_board_rect(True), self.settings.board_outline_width)
         rect = self.settings.get_board_rect()
 
         # board background
@@ -77,8 +79,8 @@ class Board:
 
         highlight_grid = self._draw_square_highlights()
 
-        self.screen.blit(highlight_grid, rect.topleft)
-        self.screen.blit(background, rect.topleft)
+        self.settings.surface.blit(highlight_grid, rect.topleft)
+        self.settings.surface.blit(background, rect.topleft)
 
     def _draw_pieces(self, surf: pygame.Surface | pygame.SurfaceType):
         square_length = self.settings.get_board_square_length()
