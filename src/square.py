@@ -22,6 +22,24 @@ class Square:
 
         return self.x == other.x and self.y == other.y
 
+    def __add__(self, other):
+        if not isinstance(other, tuple):
+            raise SquareException("Cannot add type of " + str(other.__class__) + " to " + str(self.__class__))
+
+        if len(other) != 2 or not isinstance(other[0], int) or isinstance(other[1], int):
+            raise SquareException("Tuple must have 2 integers only")
+
+        return Square(self.x + other[0], self.y + other[1])
+
+    def __sub__(self, other):
+        if isinstance(other, tuple):
+            other = Square(*other)
+
+        if isinstance(other, self.__class__):
+            return self.x - other.x, self.y - other.y
+
+        raise SquareException("Cannot subtract type " + str(other.__class__) + " from " + str(self.__class__))
+
     @property
     def x(self):
         return self._x
