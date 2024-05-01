@@ -187,10 +187,10 @@ class Board:
 
                 if Square.is_valid(square.x, square.y + direction) and self[square.x, square.y + direction] is None:
                     if Square.is_valid(square.x, square.y + 2 * direction) \
-                            and self[square.x, square.y + 2 * direction] is None\
-                            and not(self.has_been_moved(square)):
-                        return [Square(square.x, square.y + direction), Square(square.x, square.y + 2 * direction)]
-                    return [Square(square.x, square.y + direction)]
+                            and self[square.x, square.y + 2 * direction] is None \
+                            and not (self.has_been_moved(square)):
+                        return [square + (0, direction), square + (0, 2 * direction)]
+                    return [square + (0, direction)]
                 return []
 
             case Bishop() | Rook() | Queen():
@@ -211,18 +211,88 @@ class Board:
 
                 return moves
 
-            case Knight():
+            case Knight() | King():
                 moves = []
 
-                for move in KNIGHT_MOVES:
+                if isinstance(piece, King):
+                    p_moves = KING_MOVES
+                else:
+                    p_moves = KNIGHT_MOVES
+
+                for move in p_moves:
                     if Square.is_valid(square.x + move[0], square.y + move[1]) \
                             and self[square.x + move[0], square.y + move[1]] is None:
-                        moves.append(Square(square.x + move[0], square.y + move[1]))
+                        moves.append(square + move)
 
                 return moves
 
             case Piece():
                 return []
+            case _:
+                raise BoardException("Invalid piece on square. Cannot compute moves.")
+
+    def get_capture_squares(self, square: Square):
+        piece = self[square]
+
+        match piece:
+            case None:
+                return []
+
+            case Pawn():
+                captures = []
+
+                if piece.color == USR_WHITE:
+                    direction = 1
+                elif piece.color == USR_BLACK:
+                    direction = -1
+                else:
+                    raise BoardException("Invalid piece color, got " + str(piece.color))
+
+                for move in [(-1, direction), (1, direction)]:
+                    if Square.is_valid(square.x + move[0], square.y + move[1]):
+                        capture_square = square + (move[0], move[1])
+                        # normal capture
+                        if (self[capture_square] is not None and self[capture_square].color != piece.color) \
+                                or self.is_en_passant_move(square, move):
+                            captures.append(capture_square)
+
+                return captures
+
+            case Bishop() | Rook() | Queen():
+                captures = []
+
+                if isinstance(piece, Bishop):
+                    move_directions = BISHOP_DIRECTIONS
+                elif isinstance(piece, Rook):
+                    move_directions = ROOK_DIRECTIONS
+                else:
+                    move_directions = QUEEN_DIRECTIONS
+
+                for move_dir in move_directions:
+                    for move_square in get_moves_in_direction(square, move_dir):
+                        if self[move_square] is not None:
+                            if self[move_square].color != piece.color:
+                                captures.append(move_square)
+                            break
+
+                return captures
+
+            case Knight() | King():
+                captures = []
+
+                if isinstance(piece, King):
+                    p_moves = KING_MOVES
+                else:
+                    p_moves = KNIGHT_MOVES
+
+                for move in p_moves:
+                    if Square.is_valid(square.x + move[0], square.y + move[1]) \
+                            and self[square.x + move[0], square.y + move[1]] is not None \
+                            and self[square.x + move[0], square.y + move[1]].color != piece.color:
+                        captures.append(square + move)
+
+                return captures
+
             case _:
                 raise BoardException("Invalid piece on square. Cannot compute moves.")
 
@@ -237,3 +307,66 @@ class Board:
         self._squares[from_square.x][from_square.y] = None
 
         self.history.append(str(self))
+
+    def capture_piece(self, from_square, to_square):
+        if self[from_square] is None:
+            raise BoardException(f"No piece to move on {from_square}")
+
+        if self[to_square] is None:
+            if isinstance(self[from_square], Pawn):
+                # check for en-passant
+                if self.is_en_passant_move(from_square, to_square - from_square):
+                    self._squares[to_square.x][from_square.y] = None
+                    self.move_piece(from_square, to_square)
+
+        else:
+            self._squares[to_square.x][to_square.y] = None
+            self.move_piece(from_square, to_square)
+
+    def is_en_passant_move(self, square: Square, move: tuple[int, int]):
+        piece = self[square]
+
+        if piece is None or not isinstance(piece, Pawn):
+            return False
+
+        if abs(move[0]) != 1:
+            return False
+
+        if piece.color == USR_WHITE:
+            if move[1] != 1:
+                return False
+        elif piece.color == USR_BLACK:
+            if move[1] != -1:
+                return False
+        else:
+            raise BoardException("Invalid piece color, got " + str(piece.color))
+
+        if not Square.is_valid(square.x + move[0], square.y + move[1]) \
+                or self[square + move] is not None:
+            return False
+
+        if not Square.is_valid(square.x + move[0], square.y + 2 * move[1]):
+            return False
+        if not Square.is_valid(square.x + move[0], square.y):
+            return False
+
+        # opposing player must have moved the pawn double last move
+        pass_square_out = square + (move[0], 2 * move[1])
+        pass_square_in = square + (move[0], 0)
+
+        if self[pass_square_out] is not None or not isinstance(self[pass_square_in], Pawn):
+            return False
+
+        if self[pass_square_in].color == piece.color:
+            return False
+
+        if len(self.history) < 2:
+            return False
+
+        if self.history[-2][pass_square_out.to_board_str_index()] != self[pass_square_in].short:
+            return False
+
+        if self.history[-2][pass_square_in.to_board_str_index()] != ".":
+            return False
+
+        return True
