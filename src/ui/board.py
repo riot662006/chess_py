@@ -173,6 +173,56 @@ class Board(UIElement):
 
         return False
 
+    def attackers(self, square: Square, by):
+        attackers = []
+
+        if by not in [USR_WHITE, USR_BLACK]:
+            raise BoardException("Invalid attacking user")
+
+        # check pawn
+        pawn_pos = [(square.x + x, square.y + (-1 if by == USR_WHITE else 1)) for x in (-1, 1)]
+        for pos in pawn_pos:
+            if Square.is_valid(*pos) and isinstance(self[*pos], Pawn) and self[*pos].color == by:
+                attackers.append(Square(*pos))
+
+        # check king
+        for x, y in KING_MOVES:
+            if Square.is_valid(square.x + x, square.y + y):
+                pos_square = square + (x, y)
+                if isinstance(self[pos_square], King) and self[pos_square].color == by:
+                    attackers.append(pos_square)
+
+        # check knight
+        for x, y in KNIGHT_MOVES:
+            if Square.is_valid(square.x + x, square.y + y):
+                pos_square = square + (x, y)
+                if isinstance(self[pos_square], Knight) and self[pos_square].color == by:
+                    attackers.append(pos_square)
+
+        # check bishop (and queen diagonals)
+        for move_dir in BISHOP_DIRECTIONS:
+            for move_square in get_moves_in_direction(square, move_dir):
+                if self[move_square] is None:
+                    continue
+
+                if isinstance(self[move_square], (Bishop, Queen)) and self[move_square].color == by:
+                    attackers.append(move_square)
+
+                break
+
+        # check rook (and queen straights)
+        for move_dir in ROOK_DIRECTIONS:
+            for move_square in get_moves_in_direction(square, move_dir):
+                if self[move_square] is None:
+                    continue
+
+                if isinstance(self[move_square], (Rook, Queen)) and self[move_square].color == by:
+                    attackers.append(move_square)
+
+                break
+
+        return attackers
+
     def get_move_squares(self, square: Square):
         piece = self[square]
 

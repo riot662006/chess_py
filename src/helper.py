@@ -1,7 +1,7 @@
 import pygame
 import sys
 
-from square import Square
+from src.square import Square
 
 _temp = {}
 
