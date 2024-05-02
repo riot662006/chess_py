@@ -4,6 +4,8 @@ from helper import load_image
 from square import Square
 from src.ui.board import Board
 from constants import *
+from src.ui.textbox import TextBox
+
 
 class GameException(Exception):
     pass
@@ -14,12 +16,16 @@ class Game:
         self.screen = screen
         self.is_running = True
 
-        self.board_surface = pygame.Surface((600, 600), flags=pygame.SRCALPHA)
-
-        self.board = Board(self.board_surface)
+        self.board = Board((600, 600))
         self.board.settings.side = USR_WHITE
 
+        self.white_player_name = "Rick1203"
+        self.black_player_name = "3021kicR"
+
         self.current_turn = USR_WHITE
+        self.current_turn_txtBox = TextBox(f"{self.white_player_name}'s turn",
+                                           (200, 80), font=pygame.font.Font(None, 25),
+                                           color="black", background_color="white")
 
     def update(self):
         needs_render = False
@@ -40,12 +46,12 @@ class Game:
         return needs_render
 
     def render(self):
-        self.board_surface.fill((0, 0, 0, 0))
-
         self._draw_background()
-        self._draw_board()
+        self.board.draw()
+        self.current_turn_txtBox.draw()
 
-        self.screen.blit(self.board_surface, (0, 0))
+        self.screen.blit(self.board.surface, (0, 0))
+        self.screen.blit(self.current_turn_txtBox.surface, (640, 260))
 
     def _draw_background(self):
         background = load_image("assets/images/background.jpg")
@@ -53,11 +59,8 @@ class Game:
 
         self.screen.blit(background, (0, 0))
 
-    def _draw_board(self):
-        self.board.draw()
-
     def handle_mouse(self, pos):
-        if self.board.settings.get_board_rect().collidepoint(pos):
+        if self.board.settings.get_rect().collidepoint(pos):
             self.handle_board_click(pos)
 
     def handle_board_click(self, pos: tuple[int, int]):
@@ -94,14 +97,14 @@ class Game:
         self.board.selected_square = new_square
 
         if self.board.selected_square is not None:
-            self.board.set_highlight_color(self.board.selected_square, CLR_SELECTED)
+            self.board.set_highlight_color(self.board.selected_square, Palette.SELECTED.value)
 
         # FOR TESTING
         for square in self.board.get_move_squares(self.board.selected_square):
-            self.board.set_highlight_color(square, CLR_MOVABLE)
+            self.board.set_highlight_color(square, Palette.MOVABLE.value)
 
         for square in self.board.get_capture_squares(self.board.selected_square):
-            self.board.set_highlight_color(square, CLR_CAPTURABLE)
+            self.board.set_highlight_color(square, Palette.CAPTURABLE.value)
 
     def move_board_piece(self, from_square: Square, to_square: Square):
         if self.board[from_square] is None:
@@ -110,14 +113,9 @@ class Game:
         if self.board[from_square].color != self.current_turn:
             raise GameException("Wait your turn!")
 
-        self.board.move_piece(from_square, to_square)
+        self.toggle_current_turn()
 
-        if self.current_turn == USR_WHITE:
-            self.current_turn = USR_BLACK
-        elif self.current_turn == USR_BLACK:
-            self.current_turn = USR_WHITE
-        else:
-            raise GameException("Invalid turn")
+        self.board.move_piece(from_square, to_square)
 
         print(self.board.history)
 
@@ -128,9 +126,30 @@ class Game:
         if self.board[from_square].color != self.current_turn:
             raise GameException("Wait your turn!")
 
+        self.toggle_current_turn()
+
         self.board.capture_piece(from_square, to_square)
 
         print(self.board.history)
+
+    def toggle_current_turn(self):
+        if self.current_turn == USR_WHITE:
+            self.current_turn = USR_BLACK
+            self.current_turn_txtBox.set(
+                text=f"{self.black_player_name}'s turn",
+                color="white",
+                background_color="black"
+            )
+
+        elif self.current_turn == USR_BLACK:
+            self.current_turn = USR_WHITE
+            self.current_turn_txtBox.set(
+                text=f"{self.white_player_name}'s turn",
+                color="black",
+                background_color="white"
+            )
+        else:
+            raise GameException("Invalid turn")
 
     def quit(self):
         self.is_running = False

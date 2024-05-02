@@ -1,6 +1,4 @@
-import sys
 import pygame
-
 from .ui_element import UIElement
 
 from ..constants import *
@@ -15,8 +13,9 @@ class BoardException(Exception):
 
 
 class Board(UIElement):
-    def __init__(self, surface: pygame.Surface | pygame.SurfaceType):
-        super().__init__(BoardSettings, surface)
+    def __init__(self, surface_size: tuple[int, int]):
+        super().__init__(surface_size)
+        self.settings = BoardSettings(self.surface)
 
         self._squares: list[list[None | Piece]] = [[None for _ in range(8)] for _ in range(8)]
         self._square_highlight: list[list[None | pygame.Color]] = [[None for _ in range(8)] for _ in
@@ -69,8 +68,10 @@ class Board(UIElement):
         raise BoardException("Invalid settings for board side, got " + str(self.settings.side))
 
     def draw(self):
-        pygame.draw.rect(self.settings.surface, "black", self.settings.get_board_rect(True), self.settings.board_outline_width)
-        rect = self.settings.get_board_rect()
+        self.clear()
+
+        pygame.draw.rect(self.settings.surface, "black", self.settings.get_rect(True), self.settings.outline_width)
+        rect = self.settings.get_rect()
 
         # board background
         background = load_image("assets/images/board.png").convert_alpha()
@@ -83,7 +84,7 @@ class Board(UIElement):
         self.settings.surface.blit(background, rect.topleft)
 
     def _draw_pieces(self, surf: pygame.Surface | pygame.SurfaceType):
-        square_length = self.settings.get_board_square_length()
+        square_length = self.settings.get_square_length()
 
         for y in range(8):
             for x in range(8):
@@ -100,8 +101,8 @@ class Board(UIElement):
                           (pos_x, pos_y))
 
     def _draw_square_highlights(self):
-        surf = pygame.Surface(self.settings.get_board_rect().size, flags=pygame.SRCALPHA)
-        square_length = self.settings.get_board_square_length()
+        surf = pygame.Surface(self.settings.get_rect().size, flags=pygame.SRCALPHA)
+        square_length = self.settings.get_square_length()
 
         for y in range(8):
             for x in range(8):
@@ -145,11 +146,11 @@ class Board(UIElement):
                 self._squares[i][j] = piece
 
     def get_clicked_square(self, pos: tuple[int, int]):
-        board_rect = self.settings.get_board_rect()
+        board_rect = self.settings.get_rect()
 
         if board_rect.collidepoint(*pos):
             rel_pos = pygame.Vector2(pos[0] - board_rect.x, pos[1] - board_rect.y)
-            rel_pos //= self.settings.get_board_square_length()
+            rel_pos //= self.settings.get_square_length()
 
             pos_x, pos_y = self.grid_to_board_square(int(rel_pos.x), int(rel_pos.y))
 

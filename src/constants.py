@@ -1,4 +1,6 @@
-SCREEN_WIDTH = 800
+from enum import Enum
+
+SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 600
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -7,12 +9,15 @@ USR_WHITE = 0
 USR_BLACK = 1
 USR_SPECTATOR = 2
 
-CLR_CHECK = "#FF0000"
-CLR_CHECKMATE = "#CC0000AA"
-CLR_CAPTURABLE = "#FC716B"
-CLR_MOVABLE = "#E5FFE5"
-CLR_SELECTED = "#ADF9A1"
-CLR_LAST_MOVE = "#F1EBBE"
+
+class Palette(Enum):
+    CHECK = "#FF0000"
+    CHECKMATE = "#CC0000AA"
+    CAPTURABLE = "#FC716B"
+    MOVABLE = "#E5FFE5"
+    SELECTED = "#ADF9A1"
+    LAST_MOVE = "#F1EBBE"
+
 
 BISHOP_DIRECTIONS = ((-1, -1), (-1, 1), (1, -1), (1, 1))
 ROOK_DIRECTIONS = ((-1, 0), (1, 0), (0, -1), (0, 1))
@@ -23,3 +28,9 @@ QUEEN_DIRECTIONS = BISHOP_DIRECTIONS + ROOK_DIRECTIONS
 
 START_CONFIG = "rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR"
 TEST_CONFIG = ".............................r.................................."
+
+
+class Align(Enum):
+    LEFT = -1
+    CENTER = 0
+    RIGHT = 1
