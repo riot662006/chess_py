@@ -67,7 +67,7 @@ class Game:
         old_square = self.board.selected_square
         new_square = self.board.get_clicked_square(pos)
 
-        print(self.board.on_check(USR_WHITE), self.board.on_check(USR_BLACK))
+        print(self.on_check(USR_WHITE), self.on_check(USR_BLACK))
 
         if old_square is None:
             old_move_squares = []
@@ -78,11 +78,7 @@ class Game:
             old_capture_squares = self.board.get_capture_squares(old_square)
             self.board.selected_square = None
 
-        for square in old_move_squares:
-            self.board.set_highlight_color(square, None)
-
-        for square in old_capture_squares:
-            self.board.set_highlight_color(square, None)
+        self.board.reset_highlight_color((Palette.MOVABLE.value, Palette.CAPTURABLE.value))
 
         if new_square in old_move_squares:
             self.move_board_piece(old_square, new_square)
@@ -152,6 +148,16 @@ class Game:
             )
         else:
             raise GameException("Invalid turn")
+
+    def on_check(self, color):
+        if color not in [USR_WHITE, USR_BLACK]:
+            raise GameException("Invalid color type")
+
+        king_square = Square.from_board_str_index(str(self).index('k' if USR_WHITE else 'K'))
+        return len(self.board.attackers(king_square, USR_BLACK if color == USR_WHITE else USR_WHITE)) > 0
+
+    def get_safe_move_squares(self, square: Square):
+        pass
 
     def quit(self):
         self.is_running = False

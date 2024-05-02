@@ -164,6 +164,12 @@ class Board(UIElement):
 
         self._square_highlight[square.x][square.y] = to
 
+    def reset_highlight_color(self, colors: tuple | list):
+        for y in range(8):
+            for x in range(8):
+                if self._square_highlight[x][y] in colors:
+                    self.set_highlight_color(Square(x, y), None)
+
     def has_been_moved(self, square: Square):
         start_piece = self.history[0][square.to_board_str_index()]
 
@@ -423,10 +429,3 @@ class Board(UIElement):
             return False
 
         return True
-
-    def on_check(self, color):
-        if color not in [USR_WHITE, USR_BLACK]:
-            raise BoardException("Invalid color type")
-
-        king_square = Square.from_board_str_index(str(self).index(King(color).short))
-        return len(self.attackers(king_square, USR_BLACK if color == USR_WHITE else USR_WHITE)) > 0
