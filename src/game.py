@@ -153,7 +153,7 @@ class Game:
         if color not in [USR_WHITE, USR_BLACK]:
             raise GameException("Invalid color type")
 
-        king_square = Square.from_board_str_index(str(self).index('k' if USR_WHITE else 'K'))
+        king_square = Square.from_board_str_index(str(self.board).index('k' if USR_WHITE else 'K'))
         return len(self.board.attackers(king_square, USR_BLACK if color == USR_WHITE else USR_WHITE)) > 0
 
     def get_safe_move_squares(self, square: Square):
