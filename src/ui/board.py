@@ -28,6 +28,7 @@ class Board(UIElement):
         # self.str_to_board(TEST_CONFIG)
 
         self.history = [str(self)]
+        self.redo_history = []
 
     def __str__(self):
         res = ""
@@ -165,6 +166,8 @@ class Board(UIElement):
         self._square_highlight[square.x][square.y] = to
 
     def reset_highlight_color(self, colors: tuple | list):
+        colors = [pygame.Color(color) for color in colors]
+
         for y in range(8):
             for x in range(8):
                 if self._square_highlight[x][y] in colors:
@@ -366,6 +369,7 @@ class Board(UIElement):
         self._squares[from_square.x][from_square.y] = None
 
         self.history.append(str(self))
+        self.redo_history = []
 
     def capture_piece(self, from_square, to_square):
         if self[from_square] is None:
@@ -381,6 +385,20 @@ class Board(UIElement):
         else:
             self._squares[to_square.x][to_square.y] = None
             self.move_piece(from_square, to_square)
+
+    def undo(self):
+        if len(self.history) > 1:
+            self.str_to_board(self.history[-2])
+            self.redo_history.append(self.history.pop())
+            return True
+        return False
+
+    def redo(self):
+        if len(self.redo_history) > 0:
+            self.str_to_board(self.redo_history[-1])
+            self.history.append(self.redo_history.pop())
+            return True
+        return False
 
     def is_en_passant_move(self, square: Square, move: tuple[int, int]):
         piece = self[square]

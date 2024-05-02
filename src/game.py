@@ -36,11 +36,12 @@ class Game:
                 return False
 
             elif event.type == pygame.KEYDOWN:
-                print(str(self.board))
+                self.handle_key(event)
+                needs_render = True
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == pygame.BUTTON_LEFT:
-                    self.handle_mouse(event.pos)
+                    self.handle_mouse(event)
                     needs_render = True
 
         return needs_render
@@ -59,26 +60,44 @@ class Game:
 
         self.screen.blit(background, (0, 0))
 
-    def handle_mouse(self, pos):
-        if self.board.settings.get_rect().collidepoint(pos):
-            self.handle_board_click(pos)
+    def handle_mouse(self, event):
+        if self.board.settings.get_rect().collidepoint(event.pos):
+            self.handle_board_click(event.pos)
+
+    def handle_key(self, event):
+        if event.mod & pygame.KMOD_CTRL:
+            match event.key:
+                case pygame.K_z:
+                    print("UNDO")
+                    if self.board.undo():
+                        self.toggle_current_turn()
+                        self.board.selected_square = None
+                        self.board.reset_highlight_color(
+                            (Palette.SELECTED.value, Palette.MOVABLE.value, Palette.CAPTURABLE.value))
+                case pygame.K_y:
+                    print("REDO")
+                    if self.board.redo():
+                        self.toggle_current_turn()
+                        self.board.selected_square = None
+                        self.board.reset_highlight_color(
+                            (Palette.SELECTED.value, Palette.MOVABLE.value, Palette.CAPTURABLE.value))
 
     def handle_board_click(self, pos: tuple[int, int]):
+        print(self.on_check(USR_WHITE), self.on_check(USR_BLACK))
+
         old_square = self.board.selected_square
         new_square = self.board.get_clicked_square(pos)
 
-        print(self.on_check(USR_WHITE), self.on_check(USR_BLACK))
+        old_move_squares = []
+        old_capture_squares = []
 
-        if old_square is None:
-            old_move_squares = []
-            old_capture_squares = []
-        else:
+        self.board.reset_highlight_color((Palette.SELECTED.value, Palette.MOVABLE.value, Palette.CAPTURABLE.value))
+
+        if old_square is not None:
             self.board.set_highlight_color(old_square, None)
             old_move_squares = self.board.get_move_squares(old_square)
             old_capture_squares = self.board.get_capture_squares(old_square)
             self.board.selected_square = None
-
-        self.board.reset_highlight_color((Palette.MOVABLE.value, Palette.CAPTURABLE.value))
 
         if new_square in old_move_squares:
             self.move_board_piece(old_square, new_square)
@@ -97,7 +116,6 @@ class Game:
         if self.board.selected_square is not None:
             self.board.set_highlight_color(self.board.selected_square, Palette.SELECTED.value)
 
-        # FOR TESTING
         for square in self.board.get_move_squares(self.board.selected_square):
             self.board.set_highlight_color(square, Palette.MOVABLE.value)
 
