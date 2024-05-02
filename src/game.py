@@ -1,7 +1,7 @@
 import pygame
 from helper import load_image
 
-from square import Square
+from src.square import Square
 from src.ui.board import Board
 from constants import *
 from src.ui.textbox import TextBox
@@ -66,6 +66,8 @@ class Game:
     def handle_board_click(self, pos: tuple[int, int]):
         old_square = self.board.selected_square
         new_square = self.board.get_clicked_square(pos)
+
+        print(self.board.on_check(USR_WHITE), self.board.on_check(USR_BLACK))
 
         if old_square is None:
             old_move_squares = []

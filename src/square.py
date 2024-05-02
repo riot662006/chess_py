@@ -63,3 +63,7 @@ class Square:
 
     def to_board_str_index(self):
         return self.y * 8 + self.x
+
+    @staticmethod
+    def from_board_str_index(b_index):
+        return Square(b_index % 8, b_index // 8)

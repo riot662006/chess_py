@@ -423,3 +423,10 @@ class Board(UIElement):
             return False
 
         return True
+
+    def on_check(self, color):
+        if color not in [USR_WHITE, USR_BLACK]:
+            raise BoardException("Invalid color type")
+
+        king_square = Square.from_board_str_index(str(self).index(King(color).short))
+        return len(self.attackers(king_square, USR_BLACK if color == USR_WHITE else USR_WHITE)) > 0
