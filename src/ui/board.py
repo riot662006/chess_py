@@ -165,12 +165,13 @@ class Board(UIElement):
 
         self._square_highlight[square.x][square.y] = to
 
-    def reset_highlight_color(self, colors: tuple | list):
-        colors = [pygame.Color(color) for color in colors]
+    def reset_highlight_color(self, colors: tuple | list | None = None):
+        if colors is not None:
+            colors = [pygame.Color(color) for color in colors]
 
         for y in range(8):
             for x in range(8):
-                if self._square_highlight[x][y] in colors:
+                if colors is None or self._square_highlight[x][y] in colors:
                     self.set_highlight_color(Square(x, y), None)
 
     def has_been_moved(self, square: Square):
@@ -358,7 +359,7 @@ class Board(UIElement):
             case _:
                 raise BoardException("Invalid piece on square. Cannot compute moves.")
 
-    def move_piece(self, from_square: Square, to_square: Square):
+    def move_piece(self, from_square: Square, to_square: Square, reset_redo_history=True):
         if self[from_square] is None:
             raise BoardException(f"No piece to move on {from_square}")
 
@@ -369,9 +370,11 @@ class Board(UIElement):
         self._squares[from_square.x][from_square.y] = None
 
         self.history.append(str(self))
-        self.redo_history = []
 
-    def capture_piece(self, from_square, to_square):
+        if reset_redo_history:
+            self.redo_history = []
+
+    def capture_piece(self, from_square, to_square, reset_redo_history=True):
         if self[from_square] is None:
             raise BoardException(f"No piece to move on {from_square}")
 
@@ -380,16 +383,22 @@ class Board(UIElement):
                 # check for en-passant
                 if self.is_en_passant_move(from_square, to_square - from_square):
                     self._squares[to_square.x][from_square.y] = None
-                    self.move_piece(from_square, to_square)
+                    self.move_piece(from_square, to_square, reset_redo_history)
+                else:
+                    raise BoardException(f"Invalid capture on {to_square}")
+            else:
+                raise BoardException(f"Invalid capture on {to_square}")
 
         else:
             self._squares[to_square.x][to_square.y] = None
-            self.move_piece(from_square, to_square)
+            self.move_piece(from_square, to_square, reset_redo_history)
 
-    def undo(self):
+    def undo(self, redoable=True):
         if len(self.history) > 1:
             self.str_to_board(self.history[-2])
-            self.redo_history.append(self.history.pop())
+            redo_str = self.history.pop()
+            if redoable:
+                self.redo_history.append(redo_str)
             return True
         return False
 
