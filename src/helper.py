@@ -47,3 +47,7 @@ def get_moves_in_direction(square: Square, direction: tuple[int, int]):
         y += direction[1]
 
         yield Square(x, y)
+
+
+def grid_board(board_str):
+    return "--------\n" + "\n".join([board_str[i * 8:(i + 1) * 8] for i in range(8)]) + "\n--------"
