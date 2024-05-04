@@ -16,7 +16,7 @@ class Palette(Enum):
     CAPTURABLE = "#FC716B"
     MOVABLE = "#E5FFE5"
     SELECTED = "#ADF9A1"
-    LAST_MOVE = "#F1EBBE"
+    LAST_MOVE = "#efffba"
 
 
 BISHOP_DIRECTIONS = ((-1, -1), (-1, 1), (1, -1), (1, 1))

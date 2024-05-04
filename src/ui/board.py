@@ -24,7 +24,7 @@ class Board(UIElement):
 
         self.str_to_board(config)
 
-        self.history = [str(self)]
+        self.history = [[str(self), (None, None)]]
         self.redo_history = []
 
     def __str__(self):
@@ -172,9 +172,9 @@ class Board(UIElement):
                     self.set_highlight_color(Square(x, y), None)
 
     def has_been_moved(self, square: Square):
-        start_piece = self.history[0][square.to_board_str_index()]
+        start_piece = self.history[0][0][square.to_board_str_index()]
 
-        for board_state in self.history:
+        for board_state, _ in self.history:
             if start_piece != board_state[square.to_board_str_index()]:
                 return True
 
@@ -381,7 +381,7 @@ class Board(UIElement):
         self._squares[to_square.x][to_square.y] = self[from_square]
         self._squares[from_square.x][from_square.y] = None
 
-        self.history.append(str(self))
+        self.history.append([str(self), (from_square, to_square)])
 
         if reset_redo_history:
             self.redo_history = []
@@ -407,16 +407,16 @@ class Board(UIElement):
 
     def undo(self, redoable=True):
         if len(self.history) > 1:
-            self.str_to_board(self.history[-2])
-            redo_str = self.history.pop()
+            self.str_to_board(self.history[-2][0])
+            redo_data = self.history.pop()
             if redoable:
-                self.redo_history.append(redo_str)
+                self.redo_history.append(redo_data)
             return True
         return False
 
     def redo(self):
         if len(self.redo_history) > 0:
-            self.str_to_board(self.redo_history[-1])
+            self.str_to_board(self.redo_history[-1][0])
             self.history.append(self.redo_history.pop())
             return True
         return False
@@ -461,10 +461,10 @@ class Board(UIElement):
         if len(self.history) < 2:
             return False
 
-        if self.history[-2][pass_square_out.to_board_str_index()] != self[pass_square_in].short:
+        if self.history[-2][0][pass_square_out.to_board_str_index()] != self[pass_square_in].short:
             return False
 
-        if self.history[-2][pass_square_in.to_board_str_index()] != ".":
+        if self.history[-2][0][pass_square_in.to_board_str_index()] != ".":
             return False
 
         return True

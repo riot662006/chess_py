@@ -25,7 +25,7 @@ class Game:
         self.screen = screen
         self.is_running = True
 
-        self.board = Board((600, 600), TEST_CONFIG)
+        self.board = Board((600, 600))
         self.board.settings.side = USR_WHITE
 
         self.player_names = {USR_WHITE: "Rick1203", USR_BLACK: "3021kicR"}
@@ -254,6 +254,11 @@ class Game:
 
             for square in self.get_safe_capture_squares(self.board.selected_square):
                 self.board.set_highlight_color(square, Palette.CAPTURABLE.value)
+
+        prev_move = self.board.history[-1][1]
+        if prev_move[0] is not None:
+            self.board.set_highlight_color(prev_move[0], Palette.LAST_MOVE.value)
+            self.board.set_highlight_color(prev_move[1], Palette.LAST_MOVE.value)
 
         if self.on_check(self.current_player):
             self.board.set_highlight_color(self.get_king_position(self.current_player), Palette.CHECK.value)
