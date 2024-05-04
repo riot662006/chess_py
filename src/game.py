@@ -25,7 +25,7 @@ class Game:
         self.screen = screen
         self.is_running = True
 
-        self.board = Board((600, 600))
+        self.board = Board((600, 600), TEST_CONFIG)
         self.board.settings.side = USR_WHITE
 
         self.player_names = {USR_WHITE: "Rick1203", USR_BLACK: "3021kicR"}

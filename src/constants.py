@@ -27,7 +27,7 @@ KING_MOVES = BISHOP_DIRECTIONS + ROOK_DIRECTIONS
 QUEEN_DIRECTIONS = BISHOP_DIRECTIONS + ROOK_DIRECTIONS
 
 START_CONFIG = "rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR"
-TEST_CONFIG = "rnbqkbnrpppp.ppp.....................pP.........PPPPP..PRNBQKBNR"
+TEST_CONFIG = "rnbqk..rppp..ppp...P.n....b.p..............B....PPPP.PPPRNBQK.NR"
 
 
 class Align(Enum):

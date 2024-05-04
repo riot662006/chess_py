@@ -13,7 +13,7 @@ class BoardException(Exception):
 
 
 class Board(UIElement):
-    def __init__(self, surface_size: tuple[int, int]):
+    def __init__(self, surface_size: tuple[int, int], config=START_CONFIG):
         super().__init__(surface_size)
         self.settings = BoardSettings(self.surface)
 
@@ -22,10 +22,7 @@ class Board(UIElement):
                                                                    range(8)]
         self.selected_square = None
 
-        self.str_to_board(START_CONFIG)
-
-        # for testing
-        # self.str_to_board(TEST_CONFIG)
+        self.str_to_board(config)
 
         self.history = [str(self)]
         self.redo_history = []
