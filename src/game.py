@@ -59,6 +59,8 @@ class Game:
         return needs_render
 
     def render(self):
+        self.set_highlights()
+
         self._draw_background()
         self.board.draw()
         self.player_txtBox.draw()
@@ -105,13 +107,11 @@ class Game:
                     if self.board.undo():
                         self.toggle_current_turn()
                         self.board.selected_square = None
-                        self.set_highlights()
                 case pygame.K_y:
                     print("REDO")
                     if self.board.redo():
                         self.toggle_current_turn()
                         self.board.selected_square = None
-                        self.set_highlights()
 
                 case pygame.K_s:
                     print(str(self.board))
@@ -127,7 +127,6 @@ class Game:
         old_capture_squares = []
 
         if old_square is not None:
-            self.board.set_highlight_color(old_square, None)
             old_move_squares = self.get_safe_move_squares(old_square)
             old_capture_squares = self.get_safe_capture_squares(old_square)
             self.board.selected_square = None
@@ -145,7 +144,6 @@ class Game:
             return
 
         self.board.selected_square = new_square
-        self.set_highlights()
 
     def move_board_piece(self, from_square: Square, to_square: Square):
         if self.board[from_square] is None:

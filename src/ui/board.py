@@ -276,6 +276,11 @@ class Board(UIElement):
 
                 if isinstance(piece, King):
                     p_moves = KING_MOVES
+
+                    if self.is_castle_move(square, (2, 0)):
+                        moves.append(square + (2, 0))
+                    if self.is_castle_move(square, (-2, 0)):
+                        moves.append(square + (-2, 0))
                 else:
                     p_moves = KNIGHT_MOVES
 
@@ -362,6 +367,16 @@ class Board(UIElement):
 
         if self[to_square] is not None:
             raise BoardException(f"Piece on {to_square}. Cannot move to occupied square")
+
+        if isinstance(self[from_square], King):
+            if self.is_castle_move(from_square, to_square - from_square):
+                direction = (to_square - from_square)[0] // 2
+
+                for square in get_moves_in_direction(from_square, (direction, 0)):
+                    if isinstance(self[square], Rook):
+                        rook_to_square = to_square + (-direction, 0)
+                        self._squares[rook_to_square.x][rook_to_square.y] = self[square]
+                    self._squares[square.x][square.y] = None
 
         self._squares[to_square.x][to_square.y] = self[from_square]
         self._squares[from_square.x][from_square.y] = None
@@ -453,3 +468,36 @@ class Board(UIElement):
             return False
 
         return True
+
+    def is_castle_move(self, square: Square, move: tuple[int, int]):
+        piece = self[square]
+
+        if piece is None or not isinstance(piece, King):
+            return False
+
+        if self.has_been_moved(square):
+            return False
+
+        if abs(move[0]) != 2:
+            return False
+
+        if move[1] != 0:
+            return False
+
+        if not Square.is_valid(square.x + move[0], square.y):
+            return False
+
+        opponent = USR_BLACK if piece.color == USR_WHITE else USR_WHITE
+
+        if len(self.attackers(square, opponent)) > 0:
+            return False
+
+        for over_squares in get_moves_in_direction(square, (move[0] // 2, 0)):
+            if self[over_squares] is None and len(self.attackers(over_squares, opponent)) == 0:
+                continue
+            if isinstance(self[over_squares], Rook) and self[over_squares].color == piece.color:
+                if not self.has_been_moved(over_squares) and (square + move) != over_squares:
+                    return True
+
+            return False
+        return False
